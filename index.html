@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Smart Department Portal with Digital Attendance System - School of Computer Application and Engineering" />
     <title>Smart Department Portal</title>
+    <!-- GitHub Pages SPA fix: handle redirect from 404.html -->
+    <script>
+      (function() {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <script type="module" crossorigin src="/smart-department-portal-/assets/index-9KDQ1yyg.js"></script>
     <link rel="stylesheet" crossorigin href="/smart-department-portal-/assets/index-CwTLBiDy.css">

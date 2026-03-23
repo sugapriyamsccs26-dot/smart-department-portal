@@ -1,0 +1,8 @@
+﻿Γ£à Staff and admin accounts seeded (1 admin + 7 staff = 8 total). 5 alumni seeded.
+Γ£à Student portal accounts already seeded (137 students).
+Γ£à User found: 24MCA01 | Role: student
+Password match (Student@1234): Γ£à YES
+Γ£à Staff found: BDU1660758 | Role: staff
+Password match (Staff@1234): Γ£à YES
+Γ£à Admin found: BDU1670884 | Role: admin
+Password match (Admin@1234): Γ£à YES

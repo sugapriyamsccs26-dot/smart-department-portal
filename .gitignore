@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.log
+portal.db
+portal.db-wal
+portal.db-shm
+.DS_Store
+*.json
+!package.json
+!package-lock.json
+key_debug.txt

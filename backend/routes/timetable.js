@@ -4,6 +4,38 @@ const dbConfig = require('../config/database');
 const { db: firestore } = require('../config/firebaseNode');
 const { authMiddleware } = require('../middleware/auth');
 
+router.get('/migrate', async (req, res) => {
+    try {
+        // Read old SQLite table
+        const rows = dbConfig.db.prepare(`SELECT t.*, u.name as staff_name FROM timetable t LEFT JOIN users u ON t.staff_id = u.id`).all();
+        
+        // Clear Firebase timetable
+        const snap = await firestore.collection('timetable').get();
+        let batch = firestore.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        
+        // Write all rows
+        batch = firestore.batch();
+        let count = 0;
+        for (const row of rows) {
+            batch.set(firestore.collection('timetable').doc(), {
+                program: row.program, semester: row.semester, day: row.day,
+                start_time: row.start_time, end_time: row.end_time,
+                course_id: row.course_id, course_name: row.course_name,
+                room: row.room, staff_name: row.staff_name || 'Unknown'
+            });
+            count++;
+            if (count % 400 === 0) { await batch.commit(); batch = firestore.batch(); }
+        }
+        await batch.commit();
+        
+        res.json({ message: `Migrated ${rows.length} timetable records successfully.` });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.get('/', authMiddleware(), async (req, res) => {
     const { program, semester } = req.query;
     try {

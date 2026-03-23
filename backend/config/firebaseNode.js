@@ -25,7 +25,16 @@ try {
     }
 
     if (serviceAccount && serviceAccount.private_key) {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      // Bulletproof PEM key reconstruction: regardless of how the env var escaped or mangled newlines
+      const rawKey = serviceAccount.private_key
+        .replace(/-----BEGIN PRIVATE KEY-----/gi, '')
+        .replace(/-----END PRIVATE KEY-----/gi, '')
+        .replace(/\\n/g, '')
+        .replace(/\s/g, '');
+      
+      if (rawKey && rawKey.length > 0) {
+        serviceAccount.private_key = '-----BEGIN PRIVATE KEY-----\n' + rawKey.match(/.{1,64}/g).join('\n') + '\n-----END PRIVATE KEY-----\n';
+      }
     }
     credential = admin.credential.cert(serviceAccount);
 

@@ -119,6 +119,35 @@ export default function Timetable({ user }) {
      }
   }
 
+  async function handleAddEntry(slotStart, slotEnd) {
+     try {
+        const progName = {
+          'MSC_CS': 'MSc CS', 'MSC_DS': 'MSc AI & DS', 'MSC_AI': 'MSc AI & DS', 'MCA': 'MCA', 'MTECH': 'MTech CS'
+        }[program] || program;
+        
+        const newEntry = {
+           program: progName,
+           semester,
+           day: activeDay,
+           start_time: slotStart,
+           end_time: slotEnd,
+           course_id: 'SUB' + Math.floor(Math.random()*1000),
+           course_name: 'New Subject',
+           room: 'Room',
+           staff_id: null,
+           staff_name: ''
+        };
+        await api.post('/timetable', newEntry);
+        
+        // Reload timetable immediately
+        const data = await api.get(`/timetable?program=${encodeURIComponent(progName)}&semester=${semester}`);
+        setDbTimetable(data);
+     } catch (err) {
+        console.error('Add failed', err);
+        alert('Failed to add entry. Are you Admin?');
+     }
+  }
+
 
    // Active course timetable (Daily View state)
   const currentDayName = DAYS[new Date().getDay() - 1] || 'Monday';
@@ -262,8 +291,9 @@ export default function Timetable({ user }) {
                                  isEditMode ? (
                                     <input 
                                        className="form-control form-control-sm" 
-                                       value={entry.course_name} 
-                                       onChange={e => handleUpdateEntry(entry.id, 'course_name', e.target.value)}
+                                       defaultValue={entry.course_name} 
+                                       key={entry.course_name + entry.id}
+                                       onBlur={e => handleUpdateEntry(entry.id, 'course_name', e.target.value)}
                                        style={{ maxWidth: 200 }}
                                     />
                                  ) : (
@@ -272,22 +302,46 @@ export default function Timetable({ user }) {
                                        {entry.type && <span className={`badge badge-${entry.type === 'lab' ? 'info' : 'secondary'}`} style={{ fontSize: 10, padding: '2px 6px' }}>{entry.type.toUpperCase()}</span>}
                                     </div>
                                  )
-                              ) : '-'}
+                              ) : (
+                                 isEditMode ? (
+                                    <button 
+                                      className="btn btn-sm btn-ghost" 
+                                      style={{ color: 'var(--primary)', scale: '0.9' }}
+                                      onClick={() => handleAddEntry(slotObj.time.split('–')[0].trim(), slotObj.time.split('–')[1]?.trim() || '')}>
+                                      ➕ Add Class
+                                    </button>
+                                 ) : '-'
+                              )}
                            </td>
                            <td className="text-sm">
                               {entry ? (
                                  isEditMode ? (
-                                    <select 
-                                       className="form-control form-control-sm" 
-                                       value={entry.staff_name || ''} 
-                                       onChange={e => handleUpdateEntry(entry.id, 'faculty', e.target.value)}
-                                       style={{ maxWidth: 200 }}
-                                    >
-                                       <option value="">-- Select Faculty --</option>
-                                       {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                                    </select>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                      <select 
+                                         className="form-control form-control-sm" 
+                                         value={entry.staff_name || ''} 
+                                         onChange={e => handleUpdateEntry(entry.id, 'faculty', e.target.value)}
+                                         style={{ maxWidth: 200 }}
+                                      >
+                                         <option value="">-- Faculty --</option>
+                                         {staffList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                      </select>
+                                      <button 
+                                        className="btn btn-sm btn-ghost" 
+                                        style={{ color: 'red', padding: '0 8px' }}
+                                        onClick={async () => {
+                                          if (window.confirm('Delete this class?')) {
+                                            await api.delete(`/timetable/${entry.id}`);
+                                            const data = await api.get(`/timetable?program=${encodeURIComponent(program)}&semester=${semester}`);
+                                            setDbTimetable(data);
+                                          }
+                                        }}
+                                      >
+                                        🗑
+                                      </button>
+                                    </div>
                                  ) : entry.staff_name || '-'
-                              ) : '-'}
+                              ) : ''}
                            </td>
                         </tr>
                      );

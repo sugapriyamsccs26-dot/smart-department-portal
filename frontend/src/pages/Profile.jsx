@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '../api';
+import { api, API_ROOT } from '../api';
 
 function GradeTag({ total }) {
   if (total >= 90) return <span style={{ fontWeight: 800, color: '#00d4aa' }}>O</span>;
@@ -311,7 +311,7 @@ export default function Profile({ user, pageData }) {
                           <tr key={doc.id}>
                             <td className="fw-700">{doc.doc_name}</td>
                             <td className="text-muted text-sm">{doc.uploaded_at.slice(0, 10)}</td>
-                            <td><a href={`http://localhost:5000${doc.file_path}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-secondary">👁️ View</a></td>
+                            <td><a href={`${API_ROOT}${doc.file_path}`} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-secondary">👁️ View</a></td>
                           </tr>
                         ))}
                       </tbody>

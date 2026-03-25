@@ -1,7 +1,8 @@
 // Shared API helper
 const rawEnv = import.meta.env.VITE_API_BASE_URL;
 const envUrl = rawEnv || 'http://localhost:5000';
-export const BASE_URL = envUrl.endsWith('/api') ? envUrl : `${envUrl.replace(/\/$/, '')}/api`;
+export const API_ROOT = envUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
+export const BASE_URL = `${API_ROOT}/api`;
 
 console.log('--- API CONFIG DIAGNOSTICS ---');
 console.log('Final BASE_URL:', BASE_URL);

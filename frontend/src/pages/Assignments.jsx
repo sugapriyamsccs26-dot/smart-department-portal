@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, BASE_URL } from '../api';
+import { api, API_ROOT } from '../api';
 
 export default function Assignments({ user }) {
   const [assignments, setAssignments] = useState([]);
@@ -200,7 +200,7 @@ export default function Assignments({ user }) {
                         <td><span className="badge badge-info">{s.program} (S{s.semester})</span></td>
                         <td className="text-muted text-sm">{new Date(s.submitted_at).toLocaleString()}</td>
                         <td>
-                          <a href={`${BASE_URL.replace('/api', '')}${s.file_path}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-ghost" style={{ color: '#3b82f6' }}>📂 Download</a>
+                          <a href={`${API_ROOT}${s.file_path}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-ghost" style={{ color: '#3b82f6' }}>📂 Download</a>
                         </td>
                       </tr>
                     ))

@@ -26,7 +26,14 @@ async function migrateAll() {
         { name: 'events', conflict: 'id' },
         { name: 'event_registrations', conflict: 'event_id, user_id' },
         { name: 'placements', conflict: 'id' },
-        { name: 'alumni', conflict: 'id' },
+        { 
+            name: 'alumni', 
+            conflict: 'id', 
+            transform: (r) => { 
+                const { current_role, ...rest } = r; 
+                return { ...rest, user_role: current_role }; 
+            } 
+        },
         { name: 'feedback', conflict: 'id' },
         { name: 'class_students', conflict: 'reg_no' },
         { name: 'class_attendance', conflict: 'reg_no, date, subject' },
@@ -36,9 +43,10 @@ async function migrateAll() {
     for (const table of tables) {
         try {
             console.log(`📦 Syncing table: [${table.name}]...`);
-            const rows = db.prepare(`SELECT * FROM ${table.name}`).all();
+            let rows = db.prepare(`SELECT * FROM ${table.name}`).all();
             
             if (rows.length > 0) {
+                if (table.transform) rows = rows.map(table.transform);
                 // Supabase upsert has a limit on payload size, so we sync in chunks of 100
                 const CHUNK_SIZE = 100;
                 for (let i = 0; i < rows.length; i += CHUNK_SIZE) {

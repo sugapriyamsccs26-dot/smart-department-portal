@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('./backend/config/nexusportal-service-key.json');
+const serviceAccount = require('./config/nexusportal-service-key.json');
 
 try {
   admin.initializeApp({

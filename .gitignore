@@ -10,3 +10,10 @@ portal.db-shm
 !package.json
 !package-lock.json
 key_debug.txt
+RENDER_ENV_VALUE.txt
+debug_key.js
+write_json*.js
+backend/scripts/dump.txt
+*.sqlite
+*.db-journal
+test_*.js

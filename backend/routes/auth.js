@@ -13,19 +13,26 @@ router.post('/login', async (req, res) => {
     if (!user_id || !password) return res.status(400).json({ message: 'User ID and password are required.' });
     const cleanId = user_id.trim();
     try {
-        if (!dbConfig.db) {
-          return res.status(500).json({ message: 'Database not initialized.' });
+        let user;
+        if (dbConfig.isProduction) {
+            const snap = await firestore.collection('users').where('user_id', '==', String(cleanId)).limit(1).get();
+            if (!snap.empty) {
+                user = { id: snap.docs[0].id, ...snap.docs[0].data() };
+            }
+        } else {
+            if (!dbConfig.db) return res.status(500).json({ message: 'Database not initialized.' });
+            user = dbConfig.db.prepare('SELECT * FROM users WHERE LOWER(user_id) = LOWER(?)').get(cleanId);
         }
-        
-        const user = dbConfig.db.prepare('SELECT * FROM users WHERE LOWER(user_id) = LOWER(?)').get(cleanId);
+
         if (!user || !user.password_hash) return res.status(401).json({ message: 'Invalid credentials.' });
 
         const isMatch = bcrypt.compareSync(password, user.password_hash);
         if (!isMatch) return res.status(401).json({ message: 'Invalid credentials.' });
         
-        const token = jwt.sign({ id: user.id, user_id: user.user_id, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '8h' });
+        const token = jwt.sign({ id: user.id, user_id: user.user_id, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
         res.json({ token, user: { id: user.id, user_id: user.user_id, name: user.name, email: user.email, role: user.role } });
     } catch (err) {
+
 
         console.error('Login error full details:', err);
         // Temporarily send error details back for diagnosis

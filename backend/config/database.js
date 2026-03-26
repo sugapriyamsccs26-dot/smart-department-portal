@@ -1,7 +1,7 @@
 require('dotenv').config();
 
-// Detect production mode from environments
-const isProduction = process.env.NODE_ENV === 'production';
+// Detect production mode from environments (Render/Vercel)
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RENDER || !!process.env.VERCEL;
 
 let dbConfig = {
   isProduction: isProduction,
@@ -9,10 +9,10 @@ let dbConfig = {
 };
 
 try {
-  // Always try to load the local SQLITE database (works in render /tmp too)
+  // Always load the local SQLITE database for local/admin operations
   const db = require('../db');
   dbConfig.db = db;
-  console.log(`--- DATABASE MODE: ${isProduction ? 'PRODUCTION' : 'LOCAL'} SQLITE SUCCESS ✅ ---`);
+  console.log(`--- DATABASE INIT: ${isProduction ? 'CLOUD MODE (Mirroring to Firebase)' : 'LOCAL MODE (SQLite Only)'} ✅ ---`);
 } catch (e) {
   console.error('❌ SQLITE LOAD ERROR:', e.message);
 }

@@ -28,9 +28,17 @@ try {
     }
 
     if (serviceAccount && serviceAccount.private_key) {
-      // Simplified private key reconstruction
-      const rawKey = serviceAccount.private_key.replace(/\\n/g, '\n');
-      serviceAccount.private_key = rawKey;
+      // Robust PEM key reconstruction
+      const keyParts = serviceAccount.private_key
+        .replace(/-----BEGIN PRIVATE KEY-----/gi, '')
+        .replace(/-----END PRIVATE KEY-----/gi, '')
+        .replace(/\\n/g, '')
+        .replace(/\n/g, '')
+        .replace(/\s/g, '');
+      
+      if (keyParts.length > 0) {
+        serviceAccount.private_key = '-----BEGIN PRIVATE KEY-----\n' + keyParts.match(/.{1,64}/g).join('\n') + '\n-----END PRIVATE KEY-----\n';
+      }
     }
 
     admin.initializeApp({
@@ -39,21 +47,21 @@ try {
     });
 
     initialized = true;
-    console.log('Firebase Admin successfully initialized!'); // Kept this log
+    console.log('Firebase Admin successfully initialized! ✅');
   } else {
     initialized = true;
   }
 } catch (error) {
   console.error('❌ Firebase Admin Setup Error:', error.message);
   lastError = error.message;
-  initialized = false; // Ensure initialized is false on error
+  initialized = false;
 }
 
 if (initialized) {
   const db = admin.firestore();
-  const auth = admin.auth(); // Kept auth
-  const storage = admin.storage(); // Kept storage
-  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true, lastError: null }; // Export lastError as null on success
+  const auth = admin.auth();
+  const storage = admin.storage();
+  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true, lastError: null };
 } else {
-  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null, lastError }; // Export lastError on failure
+  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null, lastError };
 }

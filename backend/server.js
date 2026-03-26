@@ -72,8 +72,10 @@ app.get('/api/health', (req, res) => {
       isProduction: dbConfig.isProduction,
       isLoaded: !!dbConfig.db,
       mode: dbConfig.isProduction ? 'FIREBASE' : 'SQLITE',
-      firebaseStatus: require('./config/firebaseNode').isFirebaseConfigured ? 'READY ✅' : 'NOT CONFIGURED ❌'
+      firebaseStatus: require('./config/firebaseNode').isFirebaseConfigured ? 'READY ✅' : 'NOT CONFIGURED ❌',
+      firebaseError: require('./config/firebaseNode').lastError || 'None'
     }
+
 
   });
 });

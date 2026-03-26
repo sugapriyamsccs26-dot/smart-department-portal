@@ -3,61 +3,57 @@ const fs = require('fs');
 const path = require('path');
 
 let initialized = false;
+let lastError = null; // Added to capture initialization errors
 
 try {
   if (!admin.apps.length) {
-    let credential;
-
-    // Option 1: Environment variable (for Render / cloud deployment)
     let serviceAccount;
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      console.log('Firebase Admin: using env variable credentials ✅');
+      try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        console.log('Firebase Admin: using env variable credentials ✅');
+      } catch (e) {
+        lastError = 'JSON Parse Error: ' + e.message;
+        throw new Error(lastError);
+      }
     } else {
-      // Option 2: Local JSON file (for local development)
       const serviceAccountPath = path.join(__dirname, 'nexusportal-service-key.json');
       if (fs.existsSync(serviceAccountPath)) {
         serviceAccount = require(serviceAccountPath);
         console.log('Firebase Admin: using local JSON key ✅');
       } else {
-        throw new Error('No Firebase credentials found!');
+        lastError = 'Credentials missing (neither ENV nor File found)';
+        throw new Error(lastError);
       }
     }
 
     if (serviceAccount && serviceAccount.private_key) {
-      // Bulletproof PEM key reconstruction: regardless of how the env var escaped or mangled newlines
-      const rawKey = serviceAccount.private_key
-        .replace(/-----BEGIN PRIVATE KEY-----/gi, '')
-        .replace(/-----END PRIVATE KEY-----/gi, '')
-        .replace(/\\n/g, '')
-        .replace(/\s/g, '');
-      
-      if (rawKey && rawKey.length > 0) {
-        serviceAccount.private_key = '-----BEGIN PRIVATE KEY-----\n' + rawKey.match(/.{1,64}/g).join('\n') + '\n-----END PRIVATE KEY-----\n';
-      }
+      // Simplified private key reconstruction
+      const rawKey = serviceAccount.private_key.replace(/\\n/g, '\n');
+      serviceAccount.private_key = rawKey;
     }
-    credential = admin.credential.cert(serviceAccount);
-
 
     admin.initializeApp({
-      credential,
+      credential: admin.credential.cert(serviceAccount),
       storageBucket: 'nexusportal-c49b0.firebasestorage.app'
     });
 
     initialized = true;
-    console.log('Firebase Admin successfully initialized!');
+    console.log('Firebase Admin successfully initialized!'); // Kept this log
   } else {
     initialized = true;
   }
 } catch (error) {
-  console.error('Firebase Admin Setup Error:', error.message);
+  console.error('❌ Firebase Admin Setup Error:', error.message);
+  lastError = error.message;
+  initialized = false; // Ensure initialized is false on error
 }
 
 if (initialized) {
   const db = admin.firestore();
-  const auth = admin.auth();
-  const storage = admin.storage();
-  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true };
+  const auth = admin.auth(); // Kept auth
+  const storage = admin.storage(); // Kept storage
+  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true, lastError: null }; // Export lastError as null on success
 } else {
-  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null };
+  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null, lastError }; // Export lastError on failure
 }

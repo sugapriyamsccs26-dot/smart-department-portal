@@ -39,8 +39,10 @@ router.post('/:id/register', authMiddleware(['student', 'alumni']), async (req, 
             if (!existing.empty) return res.status(400).json({ message: 'Already registered.' });
             await firestore.collection('event_registrations').add({ event_id: req.params.id, user_id: req.user.id, registered_at: new Date().toISOString() });
         } else {
-            dbConfig.db.prepare('INSERT INTO event_registrations (event_id, user_id) VALUES (?, ?)').run(req.params.id, req.user.id);
+            const result = dbConfig.db.prepare('INSERT INTO event_registrations (event_id, user_id) VALUES (?, ?)').run(req.params.id, req.user.id);
+            syncService.syncRecord('event_registrations', { id: result.lastInsertRowid, event_id: req.params.id, user_id: req.user.id, registered_at: new Date().toISOString() }, 'event_id, user_id');
         }
+
         res.status(201).json({ message: 'Successfully registered.' });
     } catch (err) {
         if (err.message && err.message.includes('UNIQUE')) return res.status(400).json({ message: 'Already registered.' });
@@ -90,7 +92,9 @@ router.delete('/:id', authMiddleware(['admin']), async (req, res) => {
             await firestore.collection('events').doc(req.params.id).delete();
         } else {
             dbConfig.db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id); 
+            syncService.syncDelete('events', 'id', req.params.id);
         }
+
         res.json({ message: 'Deleted.' }); 
     } catch (err) { res.status(500).json({ message: 'Server error.' }); }
 });

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture Diagrams</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .diagram-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+        
+        .diagram-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            min-height: 400px;
+        }
+        
+        .legend {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        
+        .legend h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .legend p {
+            color: #555;
+            margin: 5px 0;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .diagram-section h2 {
+                font-size: 1.3em;
+            }
+            
+            .diagram-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Academic Management System Architecture</h1>
+        
+        <!-- DFD Section -->
+        <div class="diagram-section">
+            <h2>🔗 4.1 Data Flow Diagram (Level 1)</h2>
+            <div class="mermaid">
+graph LR
+    User([User: Admin/Staff/Student]) -->|Login| Auth[Authentication Service]
+    Auth -->|Token| Dashboard[Dashboard Service]
+    Dashboard -->|Mark Attendance| AttService[Attendance Logic]
+    Dashboard -->|Enter Marks| MarkService[Marks Analytics]
+    AttService -->|Write| DB[(Primary SQLite/Supabase)]
+    MarkService -->|Update| DB
+    DB -->|Read Stats| Analytics[Reports & Notifications]
+    Analytics -->|Alerts| User
+            </div>
+            <div class="legend">
+                <h4>📌 Key Components:</h4>
+                <p><strong>User Layer:</strong> Admin, Staff, and Student roles</p>
+                <p><strong>Authentication Service:</strong> Validates credentials and issues tokens</p>
+                <p><strong>Dashboard Service:</strong> Central hub for user interactions</p>
+                <p><strong>Business Logic:</strong> Attendance and Marks services process data</p>
+                <p><strong>Database:</strong> Primary storage (SQLite/Supabase)</p>
+                <p><strong>Analytics:</strong> Generates reports and alerts</p>
+            </div>
+        </div>
+        
+        <!-- Class Diagram Section -->
+        <div class="diagram-section">
+            <h2>🧩 4.2 Class Diagram (Core Modules)</h2>
+            <div class="mermaid">
+classDiagram
+    class User {
+        +int id
+        +String name
+        +String role
+        +login()
+        +updateProfile()
+    }
+    class Student {
+        +String reg_no
+        +String program
+        +float cgpa
+        +viewAttendance()
+    }
+    class Staff {
+        +String staff_id
+        +markAttendance()
+        +uploadMaterials()
+    }
+    class Admin {
+        +manageUsers()
+        +publishNotice()
+    }
+    User <|-- Student
+    User <|-- Staff
+    User <|-- Admin
+            </div>
+            <div class="legend">
+                <h4>📌 Class Hierarchy:</h4>
+                <p><strong>User (Base Class):</strong> Contains common properties (id, name, role) and methods (login, updateProfile)</p>
+                <p><strong>Student:</strong> Inherits from User; manages registration, program, and CGPA</p>
+                <p><strong>Staff:</strong> Inherits from User; handles attendance marking and material uploads</p>
+                <p><strong>Admin:</strong> Inherits from User; manages system users and publishes notices</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>

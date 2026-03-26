@@ -3,6 +3,8 @@ const router = express.Router();
 const dbConfig = require('../config/database');
 const { db: firestore } = require('../config/firebaseNode');
 const { authMiddleware } = require('../middleware/auth');
+const syncService = require('../cloud/syncService');
+
 
 router.get('/migrate', async (req, res) => {
     try {
@@ -85,9 +87,11 @@ router.post('/', authMiddleware(['admin']), async (req, res) => {
                 room: room || '', staff_id: staff_id ? String(staff_id) : null, staff_name
             });
         } else {
-            dbConfig.db.prepare('INSERT INTO timetable (program, semester, day, start_time, end_time, course_id, course_name, room, staff_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(program, semester, day, start_time, end_time, course_id, course_name, room || '', staff_id || null);
+            const result = dbConfig.db.prepare('INSERT INTO timetable (program, semester, day, start_time, end_time, course_id, course_name, room, staff_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(program, semester, day, start_time, end_time, course_id, course_name, room || '', staff_id || null);
+            syncService.syncRecord('timetable', { id: result.lastInsertRowid, program, semester: Number(semester), day, start_time, end_time, course_id, course_name, room: room || '', staff_id: staff_id || null });
         }
         res.status(201).json({ message: 'Added.' });
+
     } catch (err) { res.status(500).json({ message: 'Server error.' }); }
 });
 
@@ -108,8 +112,10 @@ router.put('/:id', authMiddleware(['admin']), async (req, res) => {
         } else {
             dbConfig.db.prepare(`UPDATE timetable SET program=?, semester=?, day=?, start_time=?, end_time=?, course_id=?, course_name=?, room=?, staff_id=? WHERE id=?`)
               .run(program, semester, day, start_time, end_time, course_id, course_name, room || '', staff_id || null, id);
+            syncService.syncRecord('timetable', { id: Number(id), program, semester: Number(semester), day, start_time, end_time, course_id, course_name, room: room || '', staff_id: staff_id || null });
         }
         res.json({ message: 'Updated.' });
+
     } catch (err) { res.status(500).json({ message: 'Server error.' }); }
 });
 
@@ -148,7 +154,10 @@ router.post('/substitute', authMiddleware(['admin']), async (req, res) => {
 router.delete('/:id', authMiddleware(['admin']), async (req, res) => {
     try { 
         if (dbConfig.isProduction) await firestore.collection('timetable').doc(req.params.id).delete();
-        else dbConfig.db.prepare('DELETE FROM timetable WHERE id = ?').run(req.params.id); 
+        else {
+            dbConfig.db.prepare('DELETE FROM timetable WHERE id = ?').run(req.params.id); 
+            syncService.syncDelete('timetable', 'id', req.params.id);
+        }
         res.json({ message: 'Deleted.' }); 
     } catch (err) { res.status(500).json({ message: 'Server error.' }); }
 });

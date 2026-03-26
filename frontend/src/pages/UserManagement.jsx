@@ -14,6 +14,8 @@ export default function UserManagement({ user, onNavigate }) {
   const [msg, setMsg] = useState('');
   const [resetPwd, setResetPwd] = useState({ uid: null, name: '', pwd: '' });
   const [editUser, setEditUser] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Load ALL users once — filtering is done on the frontend
   useEffect(() => { load(); }, []);
@@ -124,7 +126,46 @@ export default function UserManagement({ user, onNavigate }) {
             {!editUser && (
               <div className="form-group" style={{ margin: 0 }}>
                 <label className="form-label">Password</label>
-                <input type="password" className="form-control" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showPassword ? 'text' : 'password'} 
+                    className="form-control" 
+                    value={form.password} 
+                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))} 
+                    required 
+                    style={{ paddingRight: '40px' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#7c3a2d',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
             <div className="form-group" style={{ margin: 0 }}>
@@ -173,7 +214,48 @@ export default function UserManagement({ user, onNavigate }) {
             <form onSubmit={resetPassword}>
               <div className="form-group">
                 <label className="form-label">New Password (min 6 chars)</label>
-                <input type="password" className="form-control" minLength={6} value={resetPwd.pwd} onChange={e => setResetPwd(r => ({ ...r, pwd: e.target.value }))} autoFocus required />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    type={showResetPassword ? 'text' : 'password'} 
+                    className="form-control" 
+                    minLength={6} 
+                    value={resetPwd.pwd} 
+                    onChange={e => setResetPwd(r => ({ ...r, pwd: e.target.value }))} 
+                    autoFocus 
+                    required 
+                    style={{ paddingRight: '40px' }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#7c3a2d',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {showResetPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="submit" className="btn btn-danger">Reset Password</button>

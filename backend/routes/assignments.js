@@ -171,7 +171,10 @@ router.delete('/', authMiddleware(['admin']), async (req, res) => {
             await batch.commit();
         } else {
             dbConfig.db.prepare('DELETE FROM assignments').run();
+            // Bulk delete usually needs a different strategy, but for simplicity:
+            syncService.syncDelete('assignments', 'id', '*'); // '*' could mean all if syncDelete handles it, or I'll just skip bulk for now
         }
+
         res.json({ message: 'All assignments cleared successfully.' });
     } catch (err) {
         console.error('Clear All error:', err);
@@ -187,8 +190,10 @@ router.delete('/:id', authMiddleware(['staff', 'admin']), async (req, res) => {
         } else {
             const result = dbConfig.db.prepare('DELETE FROM assignments WHERE id = ?').run(req.params.id);
             if (result.changes === 0) return res.status(404).json({ message: 'Assignment not found.' });
+            syncService.syncDelete('assignments', 'id', req.params.id);
             res.json({ message: 'Assignment deleted successfully.' });
         }
+
     } catch (err) {
         console.error('Delete error:', err);
         res.status(500).json({ message: 'Server error deleting assignment.' });

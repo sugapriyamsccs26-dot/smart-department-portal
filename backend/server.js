@@ -86,7 +86,8 @@ app.get('/api/health', (req, res) => {
       isLoaded: !!dbConfig.db,
       mode: dbConfig.isProduction ? 'FIREBASE' : 'SQLITE',
       firebaseStatus: require('./config/firebaseNode').isFirebaseConfigured ? 'READY ✅' : 'NOT CONFIGURED ❌',
-      firebaseError: require('./config/firebaseNode').lastError || 'None'
+      firebaseError: require('./config/firebaseNode').lastError || 'None',
+      debugKeyInfo: require('./config/firebaseNode').debugKeyInfo || 'No key info'
     }
 
 

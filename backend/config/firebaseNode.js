@@ -51,7 +51,10 @@ if (initialized) {
   const db = admin.firestore();
   const auth = admin.auth();
   const storage = admin.storage();
-  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true, lastError: null };
+  const debugKeyInfo = (serviceAccount && serviceAccount.private_key) 
+    ? `Length: ${serviceAccount.private_key.length}, Type: ${typeof serviceAccount.private_key}, Format: ${serviceAccount.private_key.includes('BEGIN PRIVATE KEY') ? 'PEM' : 'RAW'}`
+    : 'Key missing';
+  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true, lastError: null, debugKeyInfo };
 } else {
-  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null, lastError };
+  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null, lastError, debugKeyInfo: 'Key init failed' };
 }

@@ -46,11 +46,9 @@ const NAV = {
     { icon: '📈', label: 'Analytics', id: 'analytics' },
   ],
   alumni: [
-    { icon: '🏠', label: 'Dashboard', id: 'dashboard' },
     { icon: '🤝', label: 'Alumni Network', id: 'alumni' },
     { icon: '💼', label: 'Placements', id: 'placements' },
     { icon: '📢', label: 'Notice Board', id: 'notices' },
-    { icon: '🎉', label: 'Events', id: 'events' },
     { icon: '💬', label: 'Feedback', id: 'feedback' },
   ],
 };
@@ -69,7 +67,6 @@ export default function Sidebar({ user, page, onNavigate, onLogout, isOpen }) {
       <div className="sidebar-logo">
         <div className="logo-icon">🏛️</div>
         <h2>Smart Dept Portal</h2>
-        <p>SC App & Engineering</p>
       </div>
 
       <nav className="sidebar-nav">

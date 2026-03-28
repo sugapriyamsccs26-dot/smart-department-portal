@@ -98,7 +98,10 @@ export default function App() {
     };
   }, []);
 
-  if (!user) return <><div className="app-bg" /><Login onLogin={u => { setUser(u); setPage('dashboard'); }} /></>;
+  if (!user) return <><div className="app-bg" /><Login onLogin={(u) => { 
+    setUser(u); 
+    setPage(u.role === 'alumni' ? 'alumni' : 'dashboard'); 
+  }} /></>;
 
   const PageComponent = PAGE_MAP[page] || Dashboard;
 

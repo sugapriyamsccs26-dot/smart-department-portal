@@ -68,57 +68,55 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-page">
       <div className="login-card animate-in" style={{ maxWidth: 450 }}>
-        <div className="login-logo">
-          <div className="icon">🏛️</div>
-          <h1>Smart Department Portal</h1>
-          <p>School of Computer Application &amp; Engineering</p>
+        <div className="login-logo" style={{ marginBottom: 16 }}>
+          <div className="icon" style={{ fontSize: 32, marginBottom: 4 }}>🏛️</div>
+          <h1 style={{ fontSize: 24 }}>Smart Department Portal</h1>
+          <p style={{ fontSize: 13 }}>School of Computer Application &amp; Engineering</p>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--primary)' }}>
-            {isRegistering ? '📝 Create Account' : '🔐 Welcome Back'}
-          </h2>
-          <p className="text-muted">{isRegistering ? 'Register to access the portal' : 'Please sign in to your account'}</p>
-        </div>
-
-        <div className="role-selector" style={{ marginBottom: 20 }}>
+        <div className="role-selector" style={{ marginBottom: 16 }}>
           {ROLES.map(r => (
-            <button key={r.key} className={`role-btn ${role === r.key ? 'active' : ''}`} onClick={() => handleRoleChange(r.key)}>
+            <button key={r.key} className={`role-btn ${role === r.key ? 'active' : ''}`} 
+              style={{ padding: '6px 12px', fontSize: 13 }}
+              onClick={() => handleRoleChange(r.key)}>
               {r.label}
             </button>
           ))}
         </div>
 
-        {error && <div className="alert alert-error">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
+        {error && <div className="alert alert-error" style={{ padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>{error}</div>}
+        {success && <div className="alert alert-success" style={{ padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>{success}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label" style={{ fontSize: 12, marginBottom: 4 }}>
               {role === 'student' ? 'Registration Number' : role === 'staff' ? 'Staff ID' : role === 'admin' ? 'Admin ID' : 'Alumni ID'}
             </label>
             <input className="form-control" type="text"
+              style={{ padding: '10px' }}
               placeholder={`Enter your ${role === 'student' ? 'Reg. No.' : role + ' ID'}`}
               value={userId} onChange={e => setUserId(e.target.value)} required />
           </div>
 
           {isRegistering && (
             <>
-              <div className="form-group">
-                <label className="form-label">Full Name</label>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label" style={{ fontSize: 12, marginBottom: 4 }}>Full Name</label>
                 <input className="form-control" type="text" placeholder="Enter your full name"
+                  style={{ padding: '10px' }}
                   value={name} onChange={e => setName(e.target.value)} required />
               </div>
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label" style={{ fontSize: 12, marginBottom: 4 }}>Email Address</label>
                 <input className="form-control" type="email" placeholder="Enter your email"
+                  style={{ padding: '10px' }}
                   value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
             </>
           )}
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
+          <div className="form-group" style={{ marginBottom: 16 }}>
+            <label className="form-label" style={{ fontSize: 12, marginBottom: 4 }}>Password</label>
             <div style={{ position: 'relative' }}>
               <input 
                 className="form-control" 
@@ -127,19 +125,19 @@ export default function Login({ onLogin }) {
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
                 required 
-                style={{ paddingRight: '45px' }}
+                style={{ padding: '10px 45px 10px 10px' }}
               />
               <button 
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
                   position: 'absolute',
-                  right: '8px',
+                  right: '6px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  padding: '8px',
+                  padding: '6px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -149,12 +147,12 @@ export default function Login({ onLogin }) {
                 }}
               >
                 {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                     <line x1="1" y1="1" x2="23" y2="23"></line>
                   </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                     <circle cx="12" cy="12" r="3"></circle>
                   </svg>
@@ -162,13 +160,13 @@ export default function Login({ onLogin }) {
               </button>
             </div>
           </div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', marginTop: 10 }} type="submit" disabled={loading}>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', height: 'auto', fontSize: 16 }} type="submit" disabled={loading}>
             {loading ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : (isRegistering ? '🚀 Register Now' : '🔐 Sign In')}
           </button>
         </form>
 
-        <div className="text-center" style={{ marginTop: 24 }}>
-          <p className="text-sm text-muted">
+        <div className="text-center" style={{ marginTop: 16 }}>
+          <p className="text-xs text-muted">
             {isRegistering ? 'Already have an account?' : "Don't have an account?"}
             <button 
               onClick={handleModeToggle}
@@ -177,7 +175,7 @@ export default function Login({ onLogin }) {
                 border: 'none', 
                 color: 'var(--primary)', 
                 fontWeight: 600, 
-                marginLeft: 8, 
+                marginLeft: 4, 
                 cursor: 'pointer',
                 textDecoration: 'underline'
               }}
@@ -188,12 +186,12 @@ export default function Login({ onLogin }) {
         </div>
 
         {!isRegistering && hint.id && (
-          <div className="text-center" style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', borderRadius: 8, border: '1px solid var(--card-border)' }}>
-            <p className="text-sm text-muted" style={{ marginBottom: 4 }}>Default {hint.label} credentials:</p>
-            <p className="text-sm">
-              ID: <code style={{ color: 'var(--primary-light)' }}>{hint.id}</code>
-              &nbsp;/&nbsp;
-              Password: <code style={{ color: 'var(--primary-light)' }}>{hint.pwd}</code>
+          <div className="text-center" style={{ marginTop: 16, padding: '8px 12px', background: 'var(--surface2,#f3f4f6)', borderRadius: 8, border: '1px solid var(--border)' }}>
+            <p className="text-xs text-muted" style={{ marginBottom: 2 }}>Quick Access:</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              ID: <code style={{ color: 'var(--primary)', fontWeight: 700 }}>{hint.id}</code>
+              &nbsp;|&nbsp;
+              Pass: <code style={{ color: 'var(--primary)', fontWeight: 700 }}>{hint.pwd}</code>
             </p>
           </div>
         )}

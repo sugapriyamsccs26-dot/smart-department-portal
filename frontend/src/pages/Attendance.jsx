@@ -16,6 +16,13 @@ const SUBJECTS = {
   'MTech': ['Research', 'HPC', 'Distributed Systems']
 };
 
+const DEPT_LOCATION = { lat: 10.8247, lng: 78.6946 }; // Default: BDU Trichy Campus
+const ALLOWED_RADIUS = 500; // meters
+const ADT_SLOTS = [
+  { start: '10:30', end: '11:15', label: 'Morning Session' },
+  { start: '14:30', end: '15:45', label: 'Afternoon Session' }
+];
+
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -43,6 +50,10 @@ export default function Attendance({ user }) {
   const [histRecords, setHistRecords]     = useState([]);
   const [histDate, setHistDate]           = useState('');
   const [histSubj, setHistSubj]           = useState('');
+
+  // ── Restrictions state ────────────────────────────────────────────────────
+  const [restModal, setRestModal] = useState(false);
+  const [restError, setRestError] = useState('');
 
   // ── Student (legacy analytics) ────────────────────────────────────────────
   const [analytics, setAnalytics]         = useState([]);
@@ -149,7 +160,51 @@ export default function Attendance({ user }) {
       setMsg({ text: 'Selection is incomplete.', type: 'error' });
       return;
     }
+
+    // ── 1. TIME SLOT CHECK ──
+    const now = new Date();
+    const isToday = selectedDate === now.toISOString().slice(0, 10);
+    const currentStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const activeSlot = ADT_SLOTS.find(s => currentStr >= s.start && currentStr <= s.end);
+
+    if (!isToday || !activeSlot) {
+      setRestError(`Attendance cannot be marked at this time.
+        Valid slots: ${ADT_SLOTS.map(s => `${s.start}-${s.end}`).join(', ')}`);
+      setRestModal(true);
+      return;
+    }
+
+    // ── 2. GEO-FENCING CHECK ──
     setSubmitting(true);
+    setMsg({ text: 'Verifying location...', type: '' });
+
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+      });
+
+      const { latitude, longitude } = position.coords;
+      const R = 6371e3;
+      const φ1 = latitude * Math.PI/180;
+      const φ2 = DEPT_LOCATION.lat * Math.PI/180;
+      const Δφ = (DEPT_LOCATION.lat - latitude) * Math.PI/180;
+      const Δλ = (DEPT_LOCATION.lng - longitude) * Math.PI/180;
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+      if (dist > ALLOWED_RADIUS) {
+        setRestError(`Access Denied: You are ${Math.round(dist)}m away from the campus. Attendance can only be marked within the department premises (${ALLOWED_RADIUS}m).`);
+        setRestModal(true);
+        setSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      setRestError('Location Access Denied: Please enable GPS/Location permissions to mark attendance.');
+      setRestModal(true);
+      setSubmitting(false);
+      return;
+    }
+
     setMsg({ text: '', type: '' });
     try {
       const records = students.map(s => ({ reg_no: s.reg_no, status: statuses[s.reg_no] || 'absent' }));
@@ -220,6 +275,19 @@ export default function Attendance({ user }) {
   const [detailedAtt, setDetailedAtt] = useState([]);
   const [filters, setFilters] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
   const [loadingStudent, setLoadingStudent] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalDay, setModalDay]     = useState('');
+  const [modalRecords, setModalRecords] = useState([]);
+
+  function openModal(dateStr) {
+    const records = detailedAtt.filter(r => r.date === dateStr);
+    if (records.length > 0) {
+      setModalDay(dateStr);
+      setModalRecords(records);
+      setModalOpen(true);
+    }
+  }
+
 
   // Fetch attendance whenever tab or filters change (student only)
   useEffect(() => {
@@ -301,7 +369,7 @@ export default function Attendance({ user }) {
                     textAlign: 'center',
                     boxShadow: isToday ? '0 0 0 3px rgba(99,102,241,0.25)' : status ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
                     transition: 'transform 0.15s, box-shadow 0.15s',
-                    cursor: 'default',
+                    cursor: status === 'present' ? 'pointer' : 'default',
                     minHeight: 60,
                     display: 'flex',
                     flexDirection: 'column',
@@ -311,6 +379,7 @@ export default function Attendance({ user }) {
                   }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  onClick={() => status === 'present' && openModal(ds)}
                   >
                     <div style={{ fontSize: 13, fontWeight: 700, color: col.text }}>{dt.getDate()}</div>
                     {status === 'present' && (
@@ -370,7 +439,7 @@ export default function Attendance({ user }) {
                     minHeight: 72,
                     boxShadow: isToday ? '0 0 0 3px rgba(99,102,241,0.25)' : status ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
                     transition: 'transform 0.15s',
-                    cursor: 'default',
+                    cursor: status === 'present' ? 'pointer' : 'default',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -379,6 +448,7 @@ export default function Attendance({ user }) {
                   }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  onClick={() => status === 'present' && openModal(ds)}
                   >
                     <div style={{ fontSize: 14, fontWeight: 700, color: col.text }}>{d}</div>
                     {status === 'present' && (
@@ -547,6 +617,63 @@ export default function Attendance({ user }) {
             )
           }
         </div>
+
+        {/* Attendance Detail Modal */}
+        {modalOpen && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div className="card animate-in" style={{ maxWidth: 450, width: '90%', maxHeight: '80vh', overflowY: 'auto', padding: 0 }}>
+              <div className="card-header" style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="card-title" style={{ fontSize: 16 }}>📋 Subject-wise Attendance — {modalDay}</span>
+                <button 
+                  className="btn btn-ghost" 
+                  onClick={() => setModalOpen(false)} 
+                  style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 22, color: 'var(--text-muted)' }}
+                  title="Close"
+                >✕</button>
+              </div>
+              <div style={{ padding: 20 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {modalRecords.map((r, i) => (
+                    <div key={i} style={{ 
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                      padding: '14px 18px', borderRadius: 12, 
+                      background: 'var(--surface2,#f3f4f6)', 
+                      borderLeft: `5px solid ${r.status === 'present' ? '#22c55e' : '#ef4444'}`,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                    }}>
+                      <div>
+                        <div className="fw-700" style={{ fontSize: 14, color: 'var(--text)' }}>{r.subject || 'General'}</div>
+                        <div className="text-xs text-muted mt-1">Status marked by official staff</div>
+                      </div>
+                      <span className={`badge badge-${r.status === 'present' ? 'present' : r.status === 'absent' ? 'absent' : 'info'}`} style={{ fontSize: 12, padding: '4px 10px' }}>
+                        {r.status === 'present' ? '✅ Present' : '❌ Absent'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 24, textAlign: 'center' }}>
+                  <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => setModalOpen(false)}>Close Activity Detail</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Security Restrictions Modal */}
+        {restModal && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: 20 }}>
+            <div className="card animate-in" style={{ maxWidth: 450, width: '100%', padding: '32px 24px', textAlign: 'center' }}>
+              <div style={{ fontSize: 64, marginBottom: 16 }}>🚫</div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: '#ef4444' }}>Attendance Restricted</h3>
+              <p className="text-muted" style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>
+                {restError}
+              </p>
+              <button className="btn btn-primary" style={{ width: '100%', padding: 12, borderRadius: 8 }} onClick={() => setRestModal(false)}>
+                Close & Dismiss
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

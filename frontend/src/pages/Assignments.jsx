@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, API_ROOT } from '../api';
+import { api, BASE_URL } from '../api';
 
 export default function Assignments({ user }) {
   const [assignments, setAssignments] = useState([]);
@@ -201,7 +201,7 @@ export default function Assignments({ user }) {
                         <td className="text-muted text-sm">{new Date(s.submitted_at).toLocaleString()}</td>
                         <td>
                           <a 
-                            href={`${API_ROOT}${s.file_path}`} 
+                            href={`${BASE_URL}/assignments/download/${s.id}`} 
                             download 
                             target="_blank" 
                             rel="noreferrer" 

@@ -10,7 +10,17 @@ const storageService = require('../cloud/storageService');
 const multer = require('multer');
 
 // Ensure assignments uploads directory exists
-const storage = multer.memoryStorage();
+const UPLOAD_ROOT = path.join(__dirname, '..', 'uploads');
+const ASGN_DIR = path.join(UPLOAD_ROOT, 'assignments');
+if (!fs.existsSync(ASGN_DIR)) fs.mkdirSync(ASGN_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, ASGN_DIR),
+    filename: (req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + path.extname(file.originalname));
+    }
+});
 const upload = multer({
     storage,
     limits: { fileSize: 400 * 1024 * 1024 }, // 400 MB limit
@@ -81,8 +91,11 @@ router.post('/', authMiddleware(['staff', 'admin']), async (req, res) => {
 router.post('/:id/submit', authMiddleware(['student']), upload.single('file'), async (req, res) => {
     try {
         let file_path = null;
-        if (req.file) file_path = `/uploads/assignments/${req.file.filename}`;
-        else if (req.body.file_path) file_path = req.body.file_path;
+        if (req.file) {
+            file_path = `/uploads/assignments/${req.file.filename}`;
+        } else if (req.body.file_path) {
+            file_path = req.body.file_path;
+        }
 
         if (dbConfig.isProduction) {
             let studentRealId = null;
@@ -102,7 +115,9 @@ router.post('/:id/submit', authMiddleware(['student']), upload.single('file'), a
 
             const existSnap = await firestore.collection('assignment_submissions').where('assignment_id', '==', String(req.params.id)).where('student_id', '==', studentRealId).get();
             if (!existSnap.empty) {
-                await firestore.collection('assignment_submissions').doc(existSnap.docs[0].id).update({ file_path: file_path || '', submitted_at: new Date().toISOString() });
+                await firestore.collection('assignment_submissions').doc(existSnap.docs[0].id).update({ 
+                    file_path: file_path || '', submitted_at: new Date().toISOString() 
+                });
             } else {
                 await firestore.collection('assignment_submissions').add({
                     assignment_id: String(req.params.id), student_id: studentRealId,
@@ -125,7 +140,10 @@ router.post('/:id/submit', authMiddleware(['student']), upload.single('file'), a
             syncService.syncRecord('assignment_submissions', { assignment_id: Number(req.params.id), student_id: student.id, file_path: file_path || '' }, 'assignment_id, student_id');
         }
 
-        if (req.file) storageService.uploadFile(req.file.path, 'uploads', `assignments/${req.file.filename}`);
+        // Upload physical file to cloud (Supabase) if it was just uploaded locally
+        if (req.file) {
+           storageService.uploadFile(req.file.path, 'uploads', `assignments/${req.file.filename}`);
+        }
 
         res.status(201).json({ message: 'Assignment submitted successfully.', file_path });
     } catch (err) {
@@ -197,6 +215,49 @@ router.delete('/:id', authMiddleware(['staff', 'admin']), async (req, res) => {
     } catch (err) {
         console.error('Delete error:', err);
         res.status(500).json({ message: 'Server error deleting assignment.' });
+    }
+});
+
+router.get('/download/:id', async (req, res) => {
+    try {
+        let submission;
+        if (dbConfig.isProduction) {
+            const doc = await firestore.collection('assignment_submissions').doc(req.params.id).get();
+            if (doc.exists) submission = { id: doc.id, ...doc.data() };
+        } else {
+            submission = dbConfig.db.prepare('SELECT * FROM assignment_submissions WHERE id = ?').get(req.params.id);
+        }
+
+        if (!submission) return res.status(404).send('Submission not found.');
+
+        const filePath = submission.file_path;
+        if (!filePath || filePath.includes('undefined')) return res.status(404).send('File record is invalid or missing.');
+
+        // 1. Try local file first
+        const relativePath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+        const fullLocalPath = path.resolve(__dirname, '..', relativePath);
+        
+        if (fs.existsSync(fullLocalPath)) {
+            const ext = path.extname(filePath);
+            const downloadName = `${submission.registration_no || 'submission'}_assignment${ext}`;
+            return res.download(fullLocalPath, downloadName);
+        }
+
+        // 2. Fallback to Cloud (Supabase) Redirect
+        const fileName = filePath.replace('/uploads/', ''); // e.g. 'assignments/123.pdf'
+        const supabase = require('../cloud/supabaseClient');
+        if (supabase) {
+            const { data } = supabase.storage.from('uploads').getPublicUrl(fileName);
+            if (data?.publicUrl) {
+                console.log(`☁️ Assignment cloud redirect: ${fileName}`);
+                return res.redirect(data.publicUrl);
+            }
+        }
+
+        res.status(404).send('File not found locally or in cloud.');
+    } catch (err) {
+        console.error('Download error:', err);
+        res.status(500).send('Server error during download.');
     }
 });
 

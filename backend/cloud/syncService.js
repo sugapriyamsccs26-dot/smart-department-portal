@@ -47,12 +47,17 @@ const syncService = {
         // If no ID, generate a deterministic ID from conflict columns (for marks, attendance, etc.)
         if (!docId && conflictColumn !== 'id') {
           const keys = conflictColumn.split(',').map(k => k.trim());
-          docId = keys.map(k => record[k]).join('_');
+          // Ensure we have values for all keys, otherwise fallback to auto-id
+          const values = keys.map(k => record[k]).filter(v => v !== undefined && v !== null);
+          if (values.length === keys.length) {
+            docId = values.join('_').replace(/[\/\s]/g, '-');
+          }
         }
 
         if (docId) {
           await firestore.collection(table).doc(docId).set(record, { merge: true });
         } else {
+          // Check for existing if not Using docId (fallback safety)
           await firestore.collection(table).add(record);
         }
         firebaseSuccess = true;
@@ -127,7 +132,10 @@ const syncService = {
             let docId = record.id ? String(record.id) : null;
             if (!docId && conflictColumn !== 'id') {
               const keys = conflictColumn.split(',').map(k => k.trim());
-              docId = keys.map(k => record[k]).join('_');
+              const values = keys.map(k => record[k]).filter(v => v !== undefined && v !== null);
+              if (values.length === keys.length) {
+                docId = values.join('_').replace(/[\/\s]/g, '-');
+              }
             }
             const ref = docId ? firestore.collection(table).doc(docId) : firestore.collection(table).doc();
             batch.set(ref, record, { merge: true });

@@ -82,14 +82,20 @@ async function migrateTable(tableName) {
 
     for (const row of rows) {
         // Use a document ID if possible (e.g. from 'id' or 'user_id' or 'reg_no')
-        let docRef;
+        let docId;
         if (tableName === 'users' && row.user_id) {
-            docRef = collectionRef.doc(row.user_id);
+            docId = row.user_id;
+        } else if (tableName === 'class_attendance') {
+            docId = `${row.reg_no}_${row.date}_${row.subject}`.replace(/[\/\s]/g, '-');
+        } else if (tableName === 'marks') {
+            docId = `${row.student_id}_${row.course_id}_${row.semester}`.replace(/[\/\s]/g, '-');
+        } else if (tableName === 'exam_marks') {
+            docId = `${row.student_id}_${row.course_id}_${row.semester}_${row.exam_type}`.replace(/[\/\s]/g, '-');
         } else if (row.id) {
-            docRef = collectionRef.doc(row.id.toString());
-        } else {
-            docRef = collectionRef.doc();
+            docId = row.id.toString();
         }
+
+        const docRef = docId ? collectionRef.doc(docId) : collectionRef.doc();
 
         // Clean up data for Firestore (remove potential undefined)
         const cleanRow = {};

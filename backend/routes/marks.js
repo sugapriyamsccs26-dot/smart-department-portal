@@ -146,13 +146,12 @@ router.post('/', authMiddleware(['admin', 'staff']), async (req, res) => {
         const markRecord = { student_id: resolvedId, course_id, semester, internal_marks: internal, external_marks: external, total, uploaded_by: String(req.user.id) };
         
         if (dbConfig.isProduction) {
-            const existing = await firestore.collection('marks').where('student_id', '==', resolvedId).where('course_id', '==', course_id).where('semester', '==', semester).get();
-            if (!existing.empty) {
-                await firestore.collection('marks').doc(existing.docs[0].id).update({ internal_marks: internal, external_marks: external, total });
-                return res.json({ message: 'Marks updated successfully!' });
-            }
-            await firestore.collection('marks').add(markRecord);
-            res.status(201).json({ message: 'Marks entered successfully!' });
+            const docId = `${resolvedId}_${course_id}_${semester}`.replace(/[\/\s]/g, '-');
+            await firestore.collection('marks').doc(docId).set({ 
+                ...markRecord, 
+                timestamp: new Date().toISOString() 
+            }, { merge: true });
+            res.status(201).json({ message: 'Marks saved successfully!' });
         } else {
             const existing = dbConfig.db.prepare('SELECT id FROM marks WHERE student_id=? AND course_id=? AND semester=?').get(resolvedId, course_id, semester);
             if (existing) {

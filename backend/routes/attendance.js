@@ -186,19 +186,19 @@ router.post('/bulk', authMiddleware(['admin', 'staff']), async (req, res) => {
         if (dbConfig.isProduction) {
             const batch = firestore.batch();
             
-            // Delete existing records to mimic UPSERT logic
-            const oldSnap = await firestore.collection('class_attendance').where('date', '==', date).where('subject', '==', subj).get();
-            oldSnap.forEach(doc => {
-                const data = doc.data();
-                if (records.some(r => r.reg_no === data.reg_no)) {
-                    batch.delete(doc.ref);
-                }
-            });
-
-            // Insert new array
+            // Insert new records with deterministic IDs (prevents duplicates)
             for (const r of records) {
-                const newRef = firestore.collection('class_attendance').doc();
-                batch.set(newRef, { reg_no: r.reg_no, date, subject: subj, status: r.status, marked_by: marked_by || 'admin' });
+                // Formatting: reg_no_date_subject (replaces special chars with safe hyphens)
+                const docId = `${r.reg_no}_${date}_${subj}`.replace(/[\/\s]/g, '-');
+                const ref = firestore.collection('class_attendance').doc(docId);
+                batch.set(ref, { 
+                    reg_no: r.reg_no, 
+                    date, 
+                    subject: subj, 
+                    status: r.status, 
+                    marked_by: marked_by || 'admin',
+                    timestamp: new Date().toISOString()
+                }, { merge: true });
             }
             await batch.commit();
             res.json({ message: `Attendance saved to ${subj} on ${date}.` });

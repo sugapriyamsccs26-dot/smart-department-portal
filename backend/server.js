@@ -76,22 +76,31 @@ require('./db/staffAttendanceTable');
 app.use('/api/staff-attendance', require('./routes/staffAttendance'));
 
 // Health check with diagnostics
-app.get('/api/health', (req, res) => {
-  const dbConfig = require('./config/database');
-  res.json({ 
-    status: 'online', 
-    time: new Date(),
-    database: {
-      isProduction: dbConfig.isProduction,
-      isLoaded: !!dbConfig.db,
-      mode: dbConfig.isProduction ? 'FIREBASE' : 'SQLITE',
-      firebaseStatus: require('./config/firebaseNode').isFirebaseConfigured ? 'READY ✅' : 'NOT CONFIGURED ❌',
-      firebaseError: require('./config/firebaseNode').lastError || 'None',
-      debugKeyInfo: require('./config/firebaseNode').debugKeyInfo || 'No key info'
+app.get('/api/health', async (req, res) => {
+    const dbConfig = require('./config/database');
+    const fb = require('./config/firebaseNode');
+    let firestoreRead = 'Not tested';
+    if (fb.isFirebaseConfigured && fb.db) {
+       try {
+         const testSnap = await fb.db.collection('users').limit(1).get();
+         firestoreRead = `Success (Found ${testSnap.size} docs)`;
+       } catch (fe) {
+         firestoreRead = `Failed: ${fe.message}`;
+       }
     }
-
-
-  });
+    res.json({ 
+      status: 'online', 
+      time: new Date(),
+      database: {
+        isProduction: dbConfig.isProduction,
+        isLoaded: !!dbConfig.db,
+        mode: dbConfig.isProduction ? 'FIREBASE' : 'SQLITE',
+        firebaseStatus: fb.isFirebaseConfigured ? 'READY ✅' : 'NOT CONFIGURED ❌',
+        firebaseError: fb.lastError || 'None',
+        firestoreRead,
+        debugKeyInfo: fb.debugKeyInfo || 'No key info'
+      }
+    });
 });
 
 

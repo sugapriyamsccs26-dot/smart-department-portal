@@ -7,60 +7,63 @@ let lastError = null; // Added to capture initialization errors
 
 try {
   if (!admin.apps.length) {
-    let rawCredentials = process.env.FIREBASE_SERVICE_ACCOUNT;
+    let raw = process.env.FIREBASE_SERVICE_ACCOUNT;
     let serviceAccount;
 
-    if (rawCredentials) {
-      if (rawCredentials.trim().startsWith('{')) {
+    if (raw) {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith('{')) {
         try {
-          serviceAccount = JSON.parse(rawCredentials);
-          console.log('Firebase: Parsed JSON credentials ✅');
+          serviceAccount = JSON.parse(trimmed);
         } catch (e) {
-          lastError = 'JSON Parse Error: ' + e.message;
+          lastError = 'JSON Parse: ' + e.message;
         }
-      } else {
-        // Fallback: assume it's the raw private key string
-        console.log('Firebase: Working with raw key string 🔑');
-        serviceAccount = {
-          privateKey: rawCredentials,
-          clientEmail: 'firebase-adminsdk-v9v8j@nexusportal-c49b0.iam.gserviceaccount.com', // fallback from nexusportal
-          projectId: 'nexusportal-c49b0'
-        };
       }
     }
 
     if (!serviceAccount) {
-      const serviceAccountPath = path.join(__dirname, 'nexusportal-service-key.json');
-      if (fs.existsSync(serviceAccountPath)) {
-        serviceAccount = require(serviceAccountPath);
+      const p = path.join(__dirname, 'nexusportal-service-key.json');
+      if (fs.existsSync(p)) {
+        serviceAccount = require(p);
       }
     }
 
-    if (serviceAccount && (serviceAccount.privateKey || serviceAccount.private_key)) {
-      const pKey = serviceAccount.privateKey || serviceAccount.private_key;
-      const cleanKey = pKey.replace(/\\n/g, '\n');
+    if (serviceAccount && (serviceAccount.private_key || serviceAccount.privateKey)) {
+      // THE FIX: Clean the key extremely robustly
+      let pkey = serviceAccount.private_key || serviceAccount.privateKey;
       
-      // Ensure PEM format
-      if (!cleanKey.includes('BEGIN PRIVATE KEY')) {
-        const base64 = cleanKey.replace(/\n/g, '').replace(/\s/g, '');
-        serviceAccount.privateKey = `-----BEGIN PRIVATE KEY-----\n${base64.match(/.{1,64}/g).join('\n')}\n-----END PRIVATE KEY-----\n`;
-      } else {
-        serviceAccount.privateKey = cleanKey;
+      // 1. Convert literal \n to real newlines
+      pkey = pkey.replace(/\\n/g, '\n');
+      
+      // 2. If it's still a single line but looks like base64, wrap it
+      if (!pkey.includes('\n') || !pkey.includes('BEGIN PRIVATE KEY')) {
+        const clean = pkey.replace(/-----BEGIN PRIVATE KEY-----/g, '')
+                          .replace(/-----END PRIVATE KEY-----/g, '')
+                          .replace(/\\n/g, '') // handle escaped newlines
+                          .replace(/[\s\r\n]+/g, ''); // strip all whitespace
+        
+        const chunks = clean.match(/.{1,64}/g);
+        if (chunks) {
+           pkey = `-----BEGIN PRIVATE KEY-----\n${chunks.join('\n')}\n-----END PRIVATE KEY-----\n`;
+        } else {
+           throw new Error('Private key contains no valid base64 content');
+        }
       }
-      
-      // Map keys correctly for SDK
-      serviceAccount.private_key = serviceAccount.privateKey;
-      serviceAccount.client_email = serviceAccount.clientEmail || serviceAccount.client_email;
-      serviceAccount.project_id = serviceAccount.projectId || serviceAccount.project_id;
+
+      // Re-map for the SDK's expectations
+      const finalAccount = {
+        projectId: serviceAccount.project_id || serviceAccount.projectId || 'nexusportal-c49b0',
+        clientEmail: serviceAccount.client_email || serviceAccount.clientEmail || 'firebase-adminsdk-v9v8j@nexusportal-c49b0.iam.gserviceaccount.com',
+        privateKey: pkey
+      };
 
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+        credential: admin.credential.cert(finalAccount),
         storageBucket: 'nexusportal-c49b0.firebasestorage.app'
       });
       initialized = true;
     } else {
-      lastError = lastError || 'No credentials found in ENV or File';
-      initialized = false;
+      lastError = lastError || 'No private key found in credentials';
     }
   } else {
     initialized = true;
@@ -70,9 +73,9 @@ try {
   initialized = false;
 }
 
-const finalDebugInfo = (typeof process.env.FIREBASE_SERVICE_ACCOUNT !== 'undefined')
-  ? `EnvLen: ${process.env.FIREBASE_SERVICE_ACCOUNT.length}, JSON: ${process.env.FIREBASE_SERVICE_ACCOUNT.trim().startsWith('{')}`
-  : 'Env Var missing';
+const finalDebugInfo = (process.env.FIREBASE_SERVICE_ACCOUNT)
+  ? `Len: ${process.env.FIREBASE_SERVICE_ACCOUNT.length}, Format: ${process.env.FIREBASE_SERVICE_ACCOUNT.trim().startsWith('{') ? 'JSON' : 'RAW'}`
+  : 'Missing Env Var';
 
 if (initialized) {
   module.exports = { 

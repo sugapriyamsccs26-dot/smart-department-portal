@@ -90,6 +90,7 @@ app.get('/api/health', async (req, res) => {
     }
     res.json({ 
       status: 'online', 
+      version: 'v1.1.0', // Updated on Mar 28
       time: new Date(),
       database: {
         isProduction: dbConfig.isProduction,

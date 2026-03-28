@@ -200,7 +200,16 @@ export default function Assignments({ user }) {
                         <td><span className="badge badge-info">{s.program} (S{s.semester})</span></td>
                         <td className="text-muted text-sm">{new Date(s.submitted_at).toLocaleString()}</td>
                         <td>
-                          <a href={`${API_ROOT}${s.file_path}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-ghost" style={{ color: '#3b82f6' }}>📂 Download</a>
+                          <a 
+                            href={`${API_ROOT}${s.file_path}`} 
+                            download 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="btn btn-sm btn-ghost" 
+                            style={{ color: '#3b82f6' }}
+                          >
+                            📂 Download
+                          </a>
                         </td>
                       </tr>
                     ))

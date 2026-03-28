@@ -196,6 +196,7 @@ export default function Materials({ user }) {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <a 
                       href={`${BASE_URL}/materials/download/${m.id}`} 
+                      download={`${(m.title || 'material').replace(/[^a-z0-9]/gi, '_')}.${m.file_path?.split('.').pop() || 'file'}`}
                       target="_blank"
                       rel="noreferrer"
                       className="btn btn-accent btn-sm"

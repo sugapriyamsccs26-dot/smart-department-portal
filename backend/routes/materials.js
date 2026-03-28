@@ -149,10 +149,14 @@ router.get('/download/:id', async (req, res) => {
         const filePath = material.file_path;
         if (!filePath) return res.status(404).send('File path not found.');
 
-        // 1. Try local file first
-        const fullLocalPath = path.join(__dirname, '..', filePath);
+        // 1. Try local file first - Fix path resolution for both Windows and Linux
+        const relativePath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+        const fullLocalPath = path.resolve(__dirname, '..', relativePath);
+        
+        console.log(`📂 Locating local file: ${fullLocalPath}`);
         if (fs.existsSync(fullLocalPath)) {
-            return res.download(fullLocalPath, material.title + path.extname(filePath));
+            const downloadName = (material.title || 'material').replace(/[^a-z0-9]/gi, '_').toLowerCase() + path.extname(filePath);
+            return res.download(fullLocalPath, downloadName);
         }
 
         // 2. Fallback to Cloud (Supabase) — Streaming Mode

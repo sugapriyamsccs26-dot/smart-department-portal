@@ -5,11 +5,11 @@ const path = require('path');
 let initialized = false;
 let lastError = null; // Added to capture initialization errors
 
+let serviceAccount; // Moved to higher scope
+
 try {
   if (!admin.apps.length) {
     let raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-    let serviceAccount;
-
     if (raw) {
       const trimmed = raw.trim();
       if (trimmed.startsWith('{')) {
@@ -53,7 +53,7 @@ try {
       // Re-map for the SDK's expectations
       const finalAccount = {
         projectId: serviceAccount.project_id || serviceAccount.projectId || 'nexusportal-c49b0',
-        clientEmail: serviceAccount.client_email || serviceAccount.clientEmail || 'firebase-adminsdk-v9v8j@nexusportal-c49b0.iam.gserviceaccount.com',
+        clientEmail: serviceAccount.client_email || serviceAccount.clientEmail || 'firebase-adminsdk-fbsvc@nexusportal-c49b0.iam.gserviceaccount.com',
         privateKey: pkey
       };
 
@@ -73,9 +73,9 @@ try {
   initialized = false;
 }
 
-const finalDebugInfo = (process.env.FIREBASE_SERVICE_ACCOUNT)
-  ? `Len: ${process.env.FIREBASE_SERVICE_ACCOUNT.length}, Format: ${process.env.FIREBASE_SERVICE_ACCOUNT.trim().startsWith('{') ? 'JSON' : 'RAW'}`
-  : 'Missing Env Var';
+const finalDebugInfo = (serviceAccount && (serviceAccount.private_key || serviceAccount.privateKey))
+  ? `Key detected (Len: ${(serviceAccount.private_key || serviceAccount.privateKey).length}), Project: ${serviceAccount.project_id || 'nexusportal-c49b0'}`
+  : `Missing Key (Env: ${process.env.FIREBASE_SERVICE_ACCOUNT ? 'Found' : 'Missing'})`;
 
 if (initialized) {
   module.exports = { 

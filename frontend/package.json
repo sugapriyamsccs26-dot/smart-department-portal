@@ -2,7 +2,6 @@
   "name": "frontend",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://sugapriyamsccs26-dot.github.io/smart-department-portal/",
   "type": "module",
   "scripts": {
     "predeploy": "npm run build",

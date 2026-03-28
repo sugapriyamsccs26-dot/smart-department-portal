@@ -28,17 +28,7 @@ try {
     }
 
     if (serviceAccount && serviceAccount.private_key) {
-      // Robust PEM key reconstruction
-      const keyParts = serviceAccount.private_key
-        .replace(/-----BEGIN PRIVATE KEY-----/gi, '')
-        .replace(/-----END PRIVATE KEY-----/gi, '')
-        .replace(/\\n/g, '')
-        .replace(/\n/g, '')
-        .replace(/\s/g, '');
-      
-      if (keyParts.length > 0) {
-        serviceAccount.private_key = '-----BEGIN PRIVATE KEY-----\n' + keyParts.match(/.{1,64}/g).join('\n') + '\n-----END PRIVATE KEY-----\n';
-      }
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
     admin.initializeApp({

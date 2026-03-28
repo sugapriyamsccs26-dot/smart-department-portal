@@ -1,12 +1,4 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const db = new Database(path.join(__dirname, 'portal.db'));
-
-try {
-    const materials = db.prepare('SELECT id, title, file_path FROM study_materials').all();
-    console.log(JSON.stringify(materials, null, 2));
-} catch (err) {
-    console.error(err);
-} finally {
-    db.close();
-}
+const db = require('./db');
+const rows = db.prepare('SELECT id, title, file_path FROM study_materials LIMIT 10').all();
+console.log(JSON.stringify(rows, null, 2));
+process.exit(0);

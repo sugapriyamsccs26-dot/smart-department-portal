@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { api, API_ROOT } from '../api';
+import { api, API_ROOT, BASE_URL } from '../api';
 
 const TYPES = ['notes', 'ppt', 'lab_manual', 'question_paper', 'syllabus'];
 const TYPE_ICONS = { notes: '📄', ppt: '📊', lab_manual: '🧪', question_paper: '📝', syllabus: '📋' };
@@ -194,8 +194,14 @@ export default function Materials({ user }) {
                     {m.program && <span className="badge badge-primary">{m.program}</span>}
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <a href={`${API_ROOT}${m.file_path}`} target="_blank" rel="noreferrer"
-                      className="btn btn-accent btn-sm">⬇️ Download</a>
+                    <a 
+                      href={`${BASE_URL}/materials/download/${m.id}`} 
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-accent btn-sm"
+                    >
+                      ⬇️ Download
+                    </a>
                     {isStaffOrAdmin && <button className="btn btn-danger btn-sm" onClick={() => api.delete(`/materials/${m.id}`).then(load)}>🗑️</button>}
                     <span className="text-sm text-muted" style={{ marginLeft: 'auto' }}>{m.uploaded_at?.slice(0, 10)}</span>
                   </div>

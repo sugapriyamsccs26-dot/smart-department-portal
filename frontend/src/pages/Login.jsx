@@ -16,27 +16,44 @@ const HINTS = {
 };
 
 export default function Login({ onLogin }) {
+  const [isRegistering, setIsRegistering] = useState(false);
   const [role, setRole] = useState('student');
   const [userId, setUserId] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError(''); setSuccess(''); setLoading(true);
     try {
-      const data = await api.post('/auth/login', { user_id: userId, password });
-      saveAuth(data.token, data.user);
-      onLogin(data.user);
+      if (isRegistering) {
+        await api.post('/auth/register', { user_id: userId, name, email, password, role });
+        setSuccess('✅ Registration successful! Please sign in.');
+        setIsRegistering(false);
+        setPassword('');
+      } else {
+        const data = await api.post('/auth/login', { user_id: userId, password });
+        saveAuth(data.token, data.user);
+        onLogin(data.user);
+      }
     } catch (err) {
       if (err.name === 'TypeError' || (err.message && err.message.toLowerCase().includes('fetch'))) {
-        setError('Login failed. Please try again.');
+        setError('Request failed. Please try again.');
       } else {
-        setError(err.message || 'Login failed. Please check your credentials.');
+        setError(err.message || 'Operation failed.');
       }
     } finally { setLoading(false); }
+  }
+
+  function handleModeToggle() {
+    setIsRegistering(!isRegistering);
+    setError(''); setSuccess('');
+    setUserId(''); setPassword(''); setName(''); setEmail('');
   }
 
   function handleRoleChange(r) {
@@ -50,14 +67,21 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="login-page">
-      <div className="login-card animate-in">
+      <div className="login-card animate-in" style={{ maxWidth: 450 }}>
         <div className="login-logo">
           <div className="icon">🏛️</div>
           <h1>Smart Department Portal</h1>
           <p>School of Computer Application &amp; Engineering</p>
         </div>
 
-        <div className="role-selector">
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: 'var(--primary)' }}>
+            {isRegistering ? '📝 Create Account' : '🔐 Welcome Back'}
+          </h2>
+          <p className="text-muted">{isRegistering ? 'Register to access the portal' : 'Please sign in to your account'}</p>
+        </div>
+
+        <div className="role-selector" style={{ marginBottom: 20 }}>
           {ROLES.map(r => (
             <button key={r.key} className={`role-btn ${role === r.key ? 'active' : ''}`} onClick={() => handleRoleChange(r.key)}>
               {r.label}
@@ -66,6 +90,7 @@ export default function Login({ onLogin }) {
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -76,6 +101,22 @@ export default function Login({ onLogin }) {
               placeholder={`Enter your ${role === 'student' ? 'Reg. No.' : role + ' ID'}`}
               value={userId} onChange={e => setUserId(e.target.value)} required />
           </div>
+
+          {isRegistering && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input className="form-control" type="text" placeholder="Enter your full name"
+                  value={name} onChange={e => setName(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input className="form-control" type="email" placeholder="Enter your email"
+                  value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+            </>
+          )}
+
           <div className="form-group">
             <label className="form-label">Password</label>
             <div style={{ position: 'relative' }}>
@@ -121,12 +162,32 @@ export default function Login({ onLogin }) {
               </button>
             </div>
           </div>
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px' }} type="submit" disabled={loading}>
-            {loading ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : '🔐 Sign In'}
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', marginTop: 10 }} type="submit" disabled={loading}>
+            {loading ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : (isRegistering ? '🚀 Register Now' : '🔐 Sign In')}
           </button>
         </form>
 
-        {hint.id && (
+        <div className="text-center" style={{ marginTop: 24 }}>
+          <p className="text-sm text-muted">
+            {isRegistering ? 'Already have an account?' : "Don't have an account?"}
+            <button 
+              onClick={handleModeToggle}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'var(--primary)', 
+                fontWeight: 600, 
+                marginLeft: 8, 
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              {isRegistering ? 'Sign In' : 'Sign Up'}
+            </button>
+          </p>
+        </div>
+
+        {!isRegistering && hint.id && (
           <div className="text-center" style={{ marginTop: 20, padding: '10px 14px', background: 'var(--card)', borderRadius: 8, border: '1px solid var(--card-border)' }}>
             <p className="text-sm text-muted" style={{ marginBottom: 4 }}>Default {hint.label} credentials:</p>
             <p className="text-sm">

@@ -214,6 +214,10 @@ router.post('/bulk', authMiddleware(['admin', 'staff']), async (req, res) => {
                 }
             })(records);
 
+            // Real-time Cloud Mirroring
+            const cloudRecords = records.map(r => ({ reg_no: r.reg_no, date, subject: subj, status: r.status, marked_by: marked_by || 'admin' }));
+            syncService.syncBulk('class_attendance', cloudRecords, 'reg_no, date, subject');
+
             res.json({ message: `Attendance saved to ${subj} on ${date}.` });
         }
     } catch (err) {

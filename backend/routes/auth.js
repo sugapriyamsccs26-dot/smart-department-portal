@@ -58,7 +58,9 @@ router.post('/register', async (req, res) => {
             if (!existing.empty) return res.status(409).json({ message: 'User ID already exists.' });
             await firestore.collection('users').add({ user_id, name, email, password_hash: hash, role });
         } else {
-            dbConfig.db.prepare('INSERT INTO users (user_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)').run(user_id, name, email, hash, role);
+            const result = dbConfig.db.prepare('INSERT INTO users (user_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)').run(user_id, name, email, hash, role);
+            // Real-time Cloud Mirroring
+            syncService.syncRecord('users', { id: result.lastInsertRowid, user_id, name, email, password_hash: hash, role }, 'id');
         }
         res.status(201).json({ message: 'Registered successfully.' });
     } catch (err) {

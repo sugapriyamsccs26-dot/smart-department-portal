@@ -30,7 +30,20 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '400mb' }));
 app.use(express.urlencoded({ limit: '400mb', extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const UPLOAD_ROOT = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(UPLOAD_ROOT), (req, res, next) => {
+  // If express.static didn't find the file, try cloud fallback
+  const fileName = req.path.replace(/^\//, '');
+  const supabase = require('./cloud/supabaseClient');
+  if (supabase && fileName && fileName !== 'test.txt') {
+    const { data } = supabase.storage.from('uploads').getPublicUrl(fileName);
+    if (data && data.publicUrl) {
+      console.log(`☁️ Cloud fallback redirect: ${fileName} → ${data.publicUrl}`);
+      return res.redirect(data.publicUrl);
+    }
+  }
+  next();
+});
 
 // Request logger
 app.use((req, res, next) => {

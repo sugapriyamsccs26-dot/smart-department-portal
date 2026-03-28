@@ -134,4 +134,48 @@ router.delete('/:id', authMiddleware(['staff', 'admin']), async (req, res) => {
     } catch (err) { res.status(500).json({ message: 'Server error.' }); }
 });
 
+router.get('/download/:id', async (req, res) => {
+    try {
+        let material;
+        if (dbConfig.isProduction) {
+            const doc = await firestore.collection('study_materials').doc(req.params.id).get();
+            if (doc.exists) material = { id: doc.id, ...doc.data() };
+        } else {
+            material = dbConfig.db.prepare('SELECT * FROM study_materials WHERE id = ?').get(req.params.id);
+        }
+
+        if (!material) return res.status(404).send('Material not found.');
+
+        const filePath = material.file_path;
+        if (!filePath) return res.status(404).send('File path not found.');
+
+        // 1. Try local file first
+        const fullLocalPath = path.join(__dirname, '..', filePath);
+        if (fs.existsSync(fullLocalPath)) {
+            return res.download(fullLocalPath, material.title + path.extname(filePath));
+        }
+
+        // 2. Fallback to Cloud (Supabase) — Streaming Mode
+        const fileName = path.basename(filePath);
+        const supabase = require('../cloud/supabaseClient');
+        if (supabase) {
+            console.log(`☁️ Attempting cloud stream for ID ${req.params.id}: ${fileName}`);
+            const { data, error: dlError } = await supabase.storage.from('uploads').download(fileName);
+            if (!dlError && data) {
+                const buffer = Buffer.from(await data.arrayBuffer());
+                res.setHeader('Content-Type', data.type || 'application/octet-stream');
+                res.setHeader('Content-Disposition', `attachment; filename="${material.title}${path.extname(filePath)}"`);
+                return res.send(buffer);
+            } else {
+                console.error(`❌ Cloud Download Error [${fileName}]:`, dlError?.message || 'Download failed');
+            }
+        }
+
+        res.status(404).send('File not found locally or in cloud.');
+    } catch (err) {
+        console.error('Download error:', err);
+        res.status(500).send('Server error during download.');
+    }
+});
+
 module.exports = router;

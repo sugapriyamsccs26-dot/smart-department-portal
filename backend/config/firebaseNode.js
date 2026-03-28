@@ -27,8 +27,19 @@ try {
       }
     }
 
+    let debugKeyInfo = 'No key available';
     if (serviceAccount && serviceAccount.private_key) {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      const isPEM = serviceAccount.private_key.includes('BEGIN PRIVATE KEY');
+      debugKeyInfo = `Length: ${serviceAccount.private_key.length}, Type: ${typeof serviceAccount.private_key}, Format: ${isPEM ? 'PEM' : 'RAW'}`;
+      
+      if (!isPEM) {
+        // Robust reconstruction if headers are missing
+        const cleanKey = serviceAccount.private_key.replace(/\\n/g, '').replace(/\n/g, '').replace(/\s/g, '');
+        serviceAccount.private_key = `-----BEGIN PRIVATE KEY-----\n${cleanKey.match(/.{1,64}/g).join('\n')}\n-----END PRIVATE KEY-----\n`;
+        debugKeyInfo += ` (Reconstructed to PEM)`;
+      } else {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
     }
 
     admin.initializeApp({
@@ -47,14 +58,15 @@ try {
   initialized = false;
 }
 
+const finalDebugInfo = (typeof serviceAccount !== 'undefined' && serviceAccount.private_key) 
+    ? `Length: ${serviceAccount.private_key.length}, Type: ${typeof serviceAccount.private_key}, Format: ${serviceAccount.private_key.includes('BEGIN PRIVATE KEY') ? 'PEM' : 'RAW (Post-Fix)'}`
+    : 'Key Missing or undefined';
+
 if (initialized) {
   const db = admin.firestore();
   const auth = admin.auth();
   const storage = admin.storage();
-  const debugKeyInfo = (serviceAccount && serviceAccount.private_key) 
-    ? `Length: ${serviceAccount.private_key.length}, Type: ${typeof serviceAccount.private_key}, Format: ${serviceAccount.private_key.includes('BEGIN PRIVATE KEY') ? 'PEM' : 'RAW'}`
-    : 'Key missing';
-  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true, lastError: null, debugKeyInfo };
+  module.exports = { admin, db, auth, storage, isFirebaseConfigured: true, lastError: null, debugKeyInfo: finalDebugInfo };
 } else {
-  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null, lastError, debugKeyInfo: 'Key init failed' };
+  module.exports = { isFirebaseConfigured: false, db: null, auth: null, storage: null, lastError, debugKeyInfo: finalDebugInfo };
 }
